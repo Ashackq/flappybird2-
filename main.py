@@ -5,6 +5,7 @@ import pickle
 import os
 from draw_objects import draw_pipe
 from game_states import start_screen, game_over_screen
+import sqlite3
 
 # Initialize Pygame
 pygame.init()
@@ -58,7 +59,6 @@ GAME_OVER = 2
 game_state = START_SCREEN
 
 # File to store game state and high score
-pickle_file = "game_state.pkl"
 
 def collision(pipe):
     if bird_x + bird_width > pipe[0] and bird_x < pipe[0] + pipe_width:
@@ -67,42 +67,59 @@ def collision(pipe):
 
     return False
 
+DEFAULT_SCORE = 0
+DB_FILE = "flappy_bird.db"
 
-        
-def save_game_state(highscore):
-    global game_state, score
-    if score>highscore:    
-        data = {'game_state': game_state, 'high_score': score}
-    else:
-        data = {'game_state': game_state, 'high_score': highscore}
-    with open(pickle_file, 'wb') as f:
-        pickle.dump(data, f)
+def save_game_state():
+    global game_state,score
 
-
-        
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
+    
+    cursor.execute("INSERT INTO SCORE(score) VALUES (?)", (score,))
+    
+    cursor.execute("SELECT MAX(score) FROM SCORE")
+    highscore = cursor.fetchone()[0]
+    
+    connection.commit()
+    connection.close()
+    
 def load_game_state():
     global game_state, score
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(score) FROM SCORE")
+    highscore = cursor.fetchone()
+
     try:
-        if os.path.exists(pickle_file):
-            with open(pickle_file, 'rb') as f:
-                data = pickle.load(f)
-                game_state = data.get('game_state', START_SCREEN)
-                score = data.get('high_score', 0)
+        if highscore is None or highscore[0] is None:
+            score = DEFAULT_SCORE
         else:
-            game_state = START_SCREEN
-            score = 0
-    except Exception as e:
+            score = highscore[0]
+        return score
+    except sqlite3.Error as e:
         print("Error occurred while loading game state:", e)
-        game_state = START_SCREEN
-        score = 0
-    return {'game_state': game_state, 'high_score': score}
+        return DEFAULT_SCORE
+    finally:
+        connection.close()
 
 
 def main():
+    
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()  
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS SCORE(
+        game_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        score INTEGER DEFAULT 0
+        )
+    """)
+    connection.commit()
+    connection.close()
+        
     global bird_y, bird_speed, score, game_state
-    game_data = load_game_state()
-    game_state = START_SCREEN
-    high = game_data['high_score']
+    high = load_game_state()
     score = 0
     clock = pygame.time.Clock()
     run = True
@@ -130,11 +147,11 @@ def main():
                         reset_game()
 
         if game_state == START_SCREEN:
-            if high ==0:
+            if high == 0:
                 h1 = None
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter,h1)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1)
             else:
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter,high)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
@@ -182,22 +199,34 @@ def main():
             pygame.display.update()
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
-            if score>high:
+            if score > high:
+                high = score
                 game_over_screen(win, WIDTH, HEIGHT, font, score)
             else:
                 game_over_screen(win, WIDTH, HEIGHT, font, high)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
-            save_game_state(high)
-        # Save game state after each game action
-        
-        save_game_state(high)
-
+    
         clock.tick(30)
+
+    if game_state != START_SCREEN:
+        save_game_state()
+
+    connection = sqlite3.connect("flappy_bird.db")
+    cursor = connection.cursor()  
+    print("Current score db in the format [game_id,score] : ",end = " ")
+    cursor.execute("SELECT * FROM SCORE")
+    rows = cursor.fetchall()
+    print(rows)
+    connection.commit()
+    connection.close()
 
     pygame.quit()
     sys.exit()
+
+
+
 
 def reset_game():
     global bird_y, bird_speed, pipes, score
@@ -208,3 +237,6 @@ def reset_game():
 
 if __name__ == "__main__":
     main()
+
+
+

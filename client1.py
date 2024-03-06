@@ -1,7 +1,8 @@
+'''
 import pygame
 import socket
 import threading
-import pickle
+#import pickle
 from main import main 
 import time
 
@@ -36,3 +37,4 @@ main()
 
 # Close the socket connection after the game ends
 client.close()
+'''

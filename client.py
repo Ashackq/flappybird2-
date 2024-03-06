@@ -1,3 +1,4 @@
+'''
 import socket
 import threading
 import pygame
@@ -243,3 +244,4 @@ if __name__ == "__main__":
     main()
 
 client.close()
+'''
