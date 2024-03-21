@@ -1,3 +1,4 @@
+'''
 import pickle
 
 def load_pickle(file_path = "game_state.pkl"):
@@ -37,3 +38,4 @@ if __name__ == "__main__":
     #file_path = input("Enter the path to the pickle file: ")
     modify_game_state(0)
     display_pickle_contents()
+'''
