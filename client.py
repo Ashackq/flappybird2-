@@ -55,6 +55,7 @@ bird_y = HEIGHT // 2 - bird_height // 2
 bird_speed = 5
 gravity = 0.5
 jump_force = -9
+
 bird_sprite = pygame.image.load("assets/sprite.png")
 bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
 
@@ -267,6 +268,7 @@ def main():
                             )
 
             win.blit(bird_sprite, (bird_x, bird_y))
+
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
 

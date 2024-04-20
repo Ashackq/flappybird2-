@@ -26,7 +26,7 @@ def wait_screen(win, width, height, font, framecounter):
     win.blit(waiting_text, (width // 2 - waiting_text.get_width() // 2, height // 3))
     pygame.display.update()
 
-
+#TODO:name text box , 4 buttons
 def start_screen(win, width, height, font, frame_counter, score, ready):
     win.fill((202, 228, 241))
     title_text = font.render("Flappy Bird", True, (0, 0, 0))

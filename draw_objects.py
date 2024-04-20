@@ -35,6 +35,7 @@ def draw_bird(win, x, y, width, id):
     pygame.draw.circle(win, random_color, [x, y], width / 2, 0)
 
 
+
 def draw_pipe(win, x, y, height, gap, pipe_width, win_height):
     pygame.draw.rect(win, BLACK, (x, 0, pipe_width, height))
     pygame.draw.rect(
