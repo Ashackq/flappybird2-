@@ -1,0 +1,376 @@
+import pygame,random,sys
+# import config
+# from config import *
+# from pygame.locals import *
+# from screens import home_screen, end_screen
+# from assets import Fly, Pipe
+# from reassets import text, button
+
+# config.initialize()
+
+pygame.init()
+
+
+clock = pygame.time.Clock()
+fps = 60
+width = 864
+height = 936
+
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption('Flappy Bird')
+
+
+#game vars
+ground_scroll = 0
+scroll_speed = 4
+flying = False
+game_over = False
+pipe_gap = 150
+pipe_frequency = 1500 #ms
+last_pipe = pygame.time.get_ticks() - pipe_frequency
+score=0
+highscore=0
+pipechk= False
+user_scores={}
+username=""
+
+
+#assets
+bg = pygame.image.load('assets/bg.png')
+ground_img = pygame.image.load('assets/ground.png')
+font=pygame.font.Font('assets/gomarice_g_type.ttf',60)
+in_font=pygame.font.Font('assets/SuperCorn.ttf',40)
+en_font=pygame.font.Font('assets/Venite.ttf',40)
+restart=pygame.image.load('assets/restart.png')
+white=(255,255,255)
+black=(0,0,0)
+neon_green=(21, 245, 186)
+play_img=pygame.image.load('assets/play.png')
+start_img=pygame.image.load('assets/start.png')
+exit_img=pygame.image.load('assets/exit.png')
+PvE_img=pygame.image.load('assets/PvE.png')
+restart_img=pygame.image.load('assets/restart.png')
+home=pygame.image.load('assets/home1.png')
+death=pygame.mixer.Sound('assets/death.mp3')
+
+
+def text(text,font,color,x,y):
+	img=font.render(text,True,color)
+	screen.blit(img,(x,y))
+
+
+def reset_fn():
+	pipe_group.empty()
+	flyer.rect.x=100
+	flyer.rect.y=int(height/2)
+	score=0
+	return score
+
+def get_username_input():
+    global username
+    input_rect = pygame.Rect(100, height // 2, 700, 50)
+    color_inactive = pygame.Color('lightskyblue3')
+    color_active = pygame.Color('dodgerblue2')
+    color = color_inactive
+    active = False
+    text_input = ''
+    done = False
+
+    play_button = button(width // 2 - 100, height // 2 + 200, start_img)
+    quit_button = button(width // 2- 100, height // 2 + 100, exit_img)
+    play_button_disabled = True  # Initially, the Play button is disabled
+
+    while not done:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if input_rect.collidepoint(event.pos):
+                    active = not active
+                else:
+                    active = False
+                color = color_active if active else color_inactive
+                # Check if buttons are clicked
+                if play_button.rect.collidepoint(event.pos) and not play_button_disabled:
+                    done = True
+                elif quit_button.rect.collidepoint(event.pos):
+                    pygame.quit()
+                    sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if active:
+                    if event.key == pygame.K_RETURN:
+                        if len(text_input) > 0:  # Check if a valid username is entered
+                            play_button_disabled = False  # Enable Play button
+                    elif event.key == pygame.K_BACKSPACE:
+                        text_input = text_input[:-1]
+                    else:
+                        text_input += event.unicode
+
+        screen.fill((30, 30, 30))
+        pygame.draw.rect(screen, color, input_rect, 2)
+        
+        # Render text using the text function
+        text('Enter Username:', en_font, (255, 255, 255), 250, height // 2-50)
+        text(text_input, in_font, (255, 255, 255), input_rect.x + 5, input_rect.y + 5)
+
+        # Draw buttons
+        play_button.draw()
+        quit_button.draw()
+
+        if play_button_disabled:
+            play_button.img = pygame.image.load('assets/disabled_play.png')  # Load disabled button image
+        else:
+            play_button.img = start_img
+
+        pygame.display.flip()
+        clock.tick(30)
+
+    username = text_input
+
+
+class Fly(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		self.images = []
+		self.index = 0
+		self.counter = 0
+		for num in range(1, 4):
+			img = pygame.image.load(f'assets/fly{num}.png')
+			self.images.append(img)
+		self.image = self.images[self.index]
+		self.rect = self.image.get_rect()
+		self.rect.center = [x, y]
+		self.vel = 0
+		self.clicked = False
+
+	def update(self):
+		if flying == True:
+			#gravity
+			self.vel += 0.5
+			if self.vel > 8:
+				self.vel = 8
+			if self.rect.bottom < 768:
+				self.rect.y += int(self.vel)
+
+		if game_over == False:
+			#jump
+			if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+				self.clicked = True
+				self.vel = -10
+			if pygame.mouse.get_pressed()[0] == 0:
+				self.clicked = False
+
+			#handle the animation
+			self.counter += 1
+			flap_cooldown = 5
+
+			if self.counter > flap_cooldown:
+				self.counter = 0
+				self.index += 1
+				if self.index >= len(self.images):
+					self.index = 0
+			self.image = self.images[self.index]
+
+			#rotate the fly
+			self.image = pygame.transform.rotate(self.images[self.index], self.vel * -2)
+		else:
+			self.image = pygame.transform.rotate(self.images[self.index], -90)
+
+
+
+class Pipe(pygame.sprite.Sprite):
+	def __init__(self, x, y, position):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load('assets/pipe.png')
+		self.rect = self.image.get_rect()
+		#position 1 is from the top, -1 is from the bottom
+		if position == 1:
+			self.image = pygame.transform.flip(self.image, False, True)
+			self.rect.bottomleft = [x, y - int(pipe_gap / 2)]
+		if position == -1:
+			self.rect.topleft = [x, y + int(pipe_gap / 2)]
+
+	def update(self):
+		self.rect.x -= scroll_speed
+		if self.rect.right < 0:
+			self.kill()
+
+
+
+class button():
+	action=False
+	def __init__(self,x,y,img):
+		self.img=img
+		self.rect=self.img.get_rect()
+		self.rect.topleft=(x,y)
+
+	def draw(self):
+		action = False
+		pos=pygame.mouse.get_pos()
+		if self.rect.collidepoint(pos):
+			if pygame.mouse.get_pressed()[0]==1:
+				action=True
+
+		screen.blit(self.img,(self.rect.x,self.rect.y))
+		return action
+
+            
+# global class objects
+fly_group = pygame.sprite.Group()
+pipe_group = pygame.sprite.Group()
+flyer = Fly(100, int(height / 2))
+fly_group.add(flyer)
+restart_button=button(width//2-100, height//2-200,restart)
+
+
+def home_screen():
+    get_username_input()
+    start_button = button(width // 2 - 300, height // 2 +200 , play_img)
+    exit_button = button(width // 2 + 100, height // 2 + 200, exit_img)
+    PvE_button=button(width // 2 - 100, height // 2 + 0, PvE_img)
+
+    while True:
+        screen.blit(home, (0, 0))
+        start_action = start_button.draw()
+        exit_action = exit_button.draw()
+        PvE_action = PvE_button.draw()
+        text('Fly_Jack',font,black,int(width)/2-180,50)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if start_action:
+            return True
+        elif exit_action:
+            pygame.quit()
+            sys.exit()
+
+        pygame.display.update()
+        clock.tick(fps)
+
+
+
+
+def end_screen():
+    global username,user_scores,score
+    restart_button = button(width // 2 - 100, height // 2 - 50, restart)
+    exit_button = button(width // 2 - 100, height // 2 + 100, exit_img)
+
+    while True:
+        # screen.fill(black)
+        text('GAME OVER',font,neon_green,int(width)/2-180,100)
+        restart_action = restart_button.draw()
+        exit_action = exit_button.draw()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if restart_action:
+            return True
+        elif exit_action:
+            pygame.quit()
+            sys.exit()
+
+
+        if username is user_scores:
+            if user_scores[username]<score:
+                user_scores[username]=score
+        else:
+            user_scores[username]=score
+
+        print(user_scores)
+
+        pygame.display.update()
+        clock.tick(fps)
+
+		
+		
+def main_game():
+    global ground_scroll, scroll_speed, flying, game_over, \
+        pipe_gap, pipe_frequency, last_pipe, score, pipechk,highscore
+    run = True
+    while run:
+        # bgm.play()
+
+        clock.tick(fps)
+
+        # draw background
+        screen.blit(bg, (0, 0))
+
+        fly_group.draw(screen)
+        fly_group.update()
+        pipe_group.draw(screen)
+
+        # draw the ground
+        screen.blit(ground_img, (ground_scroll, 768))
+
+        # score
+        if len(pipe_group) > 0:
+            if fly_group.sprites()[0].rect.left > pipe_group.sprites()[0].rect.left \
+                    and fly_group.sprites()[0].rect.right < pipe_group.sprites()[0].rect.right \
+                    and pipechk == False:
+                pipechk = True
+            if pipechk == True:
+                if fly_group.sprites()[0].rect.left > pipe_group.sprites()[0].rect.right:
+                    score += 1
+                    pipechk = False
+
+        text(str(score), font, white, int(width) / 2, 20)
+
+        # collision check
+        if pygame.sprite.groupcollide(fly_group, pipe_group, False, False) or flyer.rect.top < 0:
+            game_over = True
+
+        # sprite flight check
+        if flyer.rect.bottom >= 768:
+            game_over = True
+            flying = False
+
+        if game_over == False and flying == True:
+
+            # generate new pipes
+            time_now = pygame.time.get_ticks()
+            if time_now - last_pipe > pipe_frequency:
+                pipe_height = random.randint(-100, 100)
+                btm_pipe = Pipe(width, int(height / 2) + pipe_height, -1)
+                top_pipe = Pipe(width, int(height / 2) + pipe_height, 1)
+                pipe_group.add(btm_pipe)
+                pipe_group.add(top_pipe)
+                last_pipe = time_now
+
+            # draw and scroll the ground
+            ground_scroll -= scroll_speed
+            if abs(ground_scroll) > 35:
+                ground_scroll = 0
+
+            pipe_group.update()
+
+        if game_over == True:
+            # bgm.stop()
+            death.play()
+            if end_screen():
+                game_over = False
+                if highscore<score:
+                    highscore=score
+                    print('highscore',highscore)
+                score = reset_fn()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN and flying == False and game_over == False:
+                flying = True
+
+        pygame.display.update()
+
+    pygame.quit()
+
+# Call main_game function
+while True:
+    if home_screen():
+        main_game()
