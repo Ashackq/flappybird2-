@@ -1,10 +1,17 @@
 import pygame
 import sys
 import random
+import numpy as np
 import pickle
 import os
 from draw_objects import draw_pipe
 from game_states import start_screen, game_over_screen
+import math
+
+
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
 
 # Initialize Pygame
 pygame.init()
@@ -12,17 +19,17 @@ pygame.init()
 # Set up the game window
 WIDTH, HEIGHT = 400, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
-#font_path = "path_to_your_font.ttf" 
-#font = pygame.font.Font(font_path, 36)
+# font_path = "path_to_your_font.ttf"
+# font = pygame.font.Font(font_path, 36)
 
 # Set the caption font
 pygame.display.set_caption("Flappy Bird")
-#pygame.display.set_caption("Flappy Bird", font=font)
+# pygame.display.set_caption("Flappy Bird", font=font)
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
 # assets
-background_image = pygame.image.load("assets/b2g.png") 
+background_image = pygame.image.load("assets/b2g.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # Colors
@@ -60,6 +67,7 @@ game_state = START_SCREEN
 # File to store game state and high score
 pickle_file = "game_state.pkl"
 
+
 def collision(pipe):
     if bird_x + bird_width > pipe[0] and bird_x < pipe[0] + pipe_width:
         if bird_y < pipe[1] or bird_y + bird_height > pipe[1] + pipe_gap:
@@ -68,52 +76,90 @@ def collision(pipe):
     return False
 
 
-        
 def save_game_state(highscore):
     global game_state, score
-    if score>highscore:    
-        data = {'game_state': game_state, 'high_score': score}
+    if score > highscore:
+        data = {"game_state": game_state, "high_score": score}
     else:
-        data = {'game_state': game_state, 'high_score': highscore}
-    with open(pickle_file, 'wb') as f:
+        data = {"game_state": game_state, "high_score": highscore}
+    with open(pickle_file, "wb") as f:
         pickle.dump(data, f)
 
 
-        
 def load_game_state():
     global game_state, score
     try:
         if os.path.exists(pickle_file):
-            with open(pickle_file, 'rb') as f:
+            with open(pickle_file, "rb") as f:
                 data = pickle.load(f)
-                game_state = data.get('game_state', START_SCREEN)
-                score = data.get('high_score', 0)
+                game_state = data.get("game_state", START_SCREEN)
+                score = data.get("high_score", 0)
         else:
+            # File doesn't exist, initialize defaults
             game_state = START_SCREEN
             score = 0
-    except Exception as e:
+    except (Exception, EOFError) as e:
         print("Error occurred while loading game state:", e)
         game_state = START_SCREEN
         score = 0
-    return {'game_state': game_state, 'high_score': score}
+    return {"game_state": game_state, "high_score": score}
+
+
+class NeuralNetwork:
+    def __init__(self, input_size, hidden_size, output_size):
+        self.weights1 = np.random.rand(input_size, hidden_size)
+        self.weights2 = np.random.rand(hidden_size, output_size)
+        self.bias1 = np.zeros((hidden_size,))
+        self.bias2 = np.zeros((output_size,))
+
+    def predict(self, X):
+        # Forward pass
+        layer1 = np.tanh(X.dot(self.weights1) + self.bias1)
+        output = sigmoid(layer1.dot(self.weights2) + self.bias2)
+        return output
+
+
+def reset_game(bird_brain):
+    bird_state_size = 3
+    hidden_size = 4
+    output_size = 1
+    global bird_y, bird_speed, pipes, score
+    bird_y = HEIGHT // 2 - bird_height // 2
+    bird_speed = 5
+    pipes = []
+    score = 0
+    # Reset the bird's brain state (optional for some training algorithms)
+    bird_brain.weights1 = np.random.rand(bird_state_size, hidden_size)
+    bird_brain.weights2 = np.random.rand(hidden_size, output_size)
 
 
 def main():
-    global bird_y, bird_speed, score, game_state
+    bird_state_size = 3
+    global bird_y, bird_speed, game_state, score
+    # Create a neural network with appropriate size
+    bird_brain = NeuralNetwork(
+        bird_state_size, 4, 1
+    )  # 3 inputs, 4 hidden neurons, 1 output
+
     game_data = load_game_state()
     game_state = START_SCREEN
-    high = game_data['high_score']
+    high = game_data["high_score"]
     score = 0
     clock = pygame.time.Clock()
     run = True
-
-    start_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
-    exit_button_rect = pygame.Rect(WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2 + 2 * BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
-
+    start_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT
+    )
+    exit_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2,
+        HEIGHT // 2 + 2 * BUTTON_HEIGHT,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+    )
     mouse_x, mouse_y = 0, 0
-
-    frame_counter=0
+    frame_counter = 0
     while run:
+        # ... event handling (refer to original code)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -127,24 +173,23 @@ def main():
                 if event.key == pygame.K_RETURN:
                     if game_state == START_SCREEN or game_state == GAME_OVER:
                         game_state = PLAYING
-                        reset_game()
-
+                        reset_game(bird_brain)
         if game_state == START_SCREEN:
-            if high ==0:
+            if high == 0:
                 h1 = None
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter,h1)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1, 1)
             else:
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter,high)
+                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high, 1)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     game_state = PLAYING
-                    reset_game()
+                    reset_game(bird_brain)
             elif exit_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     run = False
-                    reset_game()
+                    reset_game(bird_brain)
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
@@ -172,25 +217,39 @@ def main():
                 if collision(pipe):
                     game_state = GAME_OVER
 
+            # Create bird state representation
+            bird_state = np.array(
+                [
+                    bird_y / HEIGHT,  # Normalized bird height
+                    (pipes[0][0] - bird_x) / WIDTH,  # Distance to next pipe
+                    bird_speed,
+                ]
+            )  # Bird's velocity
+
+            # Get the network's prediction (jump probability)
+            jump_probability = bird_brain.predict(bird_state)
+
+            # Decide to jump based on a threshold (e.g., 60% chance)
+            if jump_probability > 0.5:
+                bird_speed = jump_force
             # Draw everything
             win.blit(bird_sprite, (bird_x, bird_y))
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
             score_text = font.render(str(score), True, WHITE)
-            win.blit(score_text, (WIDTH//2 - score_text.get_width()//2, 50))
+            win.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 50))
             pygame.display.update()
+
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
-            if score>high:
+            if score > high:
                 game_over_screen(win, WIDTH, HEIGHT, font, score)
             else:
                 game_over_screen(win, WIDTH, HEIGHT, font, high)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
-                bird_speed = jump_force
-            save_game_state(high)
-        # Save game state after each game action
-        
+                reset_game(bird_brain)  # Reset with potential brain state update
+
         save_game_state(high)
 
         clock.tick(30)
@@ -198,12 +257,6 @@ def main():
     pygame.quit()
     sys.exit()
 
-def reset_game():
-    global bird_y, bird_speed, pipes, score
-    bird_y = HEIGHT // 2 - bird_height // 2
-    bird_speed = 5
-    pipes = []
-    score = 0
 
 if __name__ == "__main__":
     main()

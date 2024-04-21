@@ -57,7 +57,7 @@ bird_speed = 5
 gravity = 0.5
 jump_force = -9
 
-bird_sprite = pygame.image.load("assets/sprite.png")
+bird_sprite = pygame.image.load("assets/fly1.png")
 bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
 
 # Pipe properties
@@ -149,17 +149,26 @@ def main():
     run = True
 
     start_button_rect = pygame.Rect(
-        WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT
+        WIDTH // 2 - BUTTON_WIDTH // 2 - 100,
+        HEIGHT // 2 + 210,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+    )
+    NN_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2 - 100,
+        HEIGHT // 2 + BUTTON_HEIGHT * 3 + 140,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
     )
     ready_button_rect = pygame.Rect(
-        WIDTH // 2 - BUTTON_WIDTH // 2,
-        HEIGHT // 2 + 4 * BUTTON_HEIGHT,
+        WIDTH // 2 - BUTTON_WIDTH // 2 + 100,
+        HEIGHT // 2 + BUTTON_HEIGHT * 2 + 130,
         BUTTON_WIDTH,
         BUTTON_HEIGHT,
     )
     exit_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2,
-        HEIGHT // 2 + 2 * BUTTON_HEIGHT,
+        HEIGHT // 2 + 3 * BUTTON_HEIGHT,
         BUTTON_WIDTH,
         BUTTON_HEIGHT,
     )
@@ -168,7 +177,6 @@ def main():
 
     frame_counter = 0
     while run:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -267,26 +275,27 @@ def main():
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
             if score > high:
-                game_over_screen(win, WIDTH, HEIGHT, font, score)
+                game_over_screen(win, WIDTH, HEIGHT, font, frame_counter, score)
             else:
-                game_over_screen(win, WIDTH, HEIGHT, font, high)
+                game_over_screen(win, WIDTH, HEIGHT, font, frame_counter, high)
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
+
         elif game_state == WAITING and ready > 0:
             wait_screen(win, WIDTH, HEIGHT, font, frame_counter)
             send_pos()
             if ready == 3:
                 time.sleep(0.2)
                 print("Lets Go!!")
-
                 game_state = PLAYING
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
         clock.tick(fps)
 
-    save_game_state(score, gameid, name)
+    save_game_state(score, gameid)
     pygame.quit()
     sys.exit()
 
