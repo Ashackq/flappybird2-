@@ -104,7 +104,6 @@ def start_server():
         except:
             pass
 
-
 # Start the server
 if __name__ == "__main__":
     clients = []

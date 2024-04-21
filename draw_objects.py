@@ -2,6 +2,11 @@
 import pygame
 import random
 
+bird_width = 40
+bird_height = 30
+bird_sprite = pygame.image.load("assets/sprite.png")
+bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
+
 RED = (255, 0, 0)
 BLACK = (0, 10, 0)
 colors = [
@@ -33,7 +38,7 @@ random_color = random.choice(colors)
 def draw_bird(win, x, y, width, id):
     # pygame.draw.rect(win, RED, (x, y, width, height))
     pygame.draw.circle(win, random_color, [x, y], width / 2, 0)
-
+    win.blit(bird_sprite, (x, y))
 
 
 def draw_pipe(win, x, y, height, gap, pipe_width, win_height):
