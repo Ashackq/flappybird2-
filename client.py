@@ -3,25 +3,27 @@ import time
 import pygame
 import sys
 import random
-import os
 from draw_objects import draw_pipe, draw_bird
 from game_states import start_screen, game_over_screen, wait_screen
-from dbfn import db_init, db_print, save_game_state, load_game_state
+from dbfn import db_init, db_save, save_game_state, load_game_state
 
 
 # Server configuration
 SERVER = "127.0.0.1"
 PORT = 5051
 
-# Create a TCP socket
-# client = socket.socket()
-# client.connect((SERVER, PORT))
-
 user_id = 0
 ready = 0
 birds = []
-name = "Akash"
 
+# db data
+db_init()
+gameid = 101
+name, high = load_game_state(gameid)
+if name == None:
+    name = "AKash"
+    db_save(gameid, name)
+print(name, high)
 
 # Initialize Pygame
 pygame.init()
@@ -29,12 +31,11 @@ pygame.init()
 # Set up the game window
 WIDTH, HEIGHT = 400, 600
 win = pygame.display.set_mode((WIDTH, HEIGHT))
-# font_path = "path_to_your_font.ttf"
-# font = pygame.font.Font(font_path, 36)
+
 
 # Set the caption font
 pygame.display.set_caption("Flappy Bird")
-# pygame.display.set_caption("Flappy Bird", font=font)
+
 BUTTON_WIDTH = 150
 BUTTON_HEIGHT = 50
 
@@ -65,8 +66,7 @@ pipe_gap = 150
 pipe_speed = 5
 pipes = []
 
-# Score
-score = 0
+
 font = pygame.font.SysFont(None, 50)
 
 # Game states
@@ -118,33 +118,32 @@ def send_pos():
         send_text = name + ":" + str(bird_y) + ":" + str(ready) + ":" + str(user_id)
         s.sendall(send_text.encode("utf-8"))
         yanit = s.recv(1024).decode("utf-8")
-        if yanit == "START":
-            ready = 3
         spl = yanit.split(":")
         if spl[0] == "id":
             user_id = int(spl[-1])
+        elif yanit == "START":
+            ready = 3
         elif spl[0] == "ready":
             ready = int(spl[-1])
         else:
             birds = yanit.split(";")
-            # print(birds)
-        s.close()
-    except socket.error as msg:
+            print(birds)
+
+    except socket.error as msg:  # Handle other socket errors
         if "[WinError 10061]" not in str(msg):
             exitserver()
         else:
             print("Waiting for connection for server..")
-        s.close()
+    finally:
+        s.close()  # Always close the socket
 
 
 send_pos()
 
-def main():
-    global bird_y, bird_speed, score, game_state, ready, birds, run
-    # Start threads for sending data and receiving instructions
 
+def main():
+    global bird_y, bird_speed, game_state, ready, birds, run, high
     game_state = START_SCREEN
-    high = load_game_state(score)
     score = 0
     clock = pygame.time.Clock()
     run = True
@@ -169,13 +168,17 @@ def main():
 
     frame_counter = 0
     while run:
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-
+                exitserver()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_state == START_SCREEN:
-                    game_state = WAITING
+                    if ready > 0:
+                        game_state = WAITING
+                    else:
+                        game_state = PLAYING
                 if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
                     run = False
                     exitserver()
@@ -197,13 +200,17 @@ def main():
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
-                    game_state = WAITING
+                    if ready > 0:
+                        game_state = WAITING
+                    else:
+                        game_state = PLAYING
                     reset_game()
             elif exit_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     run = False
                     reset_game()
-                    exitserver()
+                    if ready > 0:
+                        exitserver()
             elif ready_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     ready = 1
@@ -212,7 +219,8 @@ def main():
             pygame.time.Clock().tick(30)
 
         elif game_state == PLAYING:
-            send_pos()
+            if ready > 0:
+                send_pos()
             win.blit(background_image, (0, 0))
             # Move bird
             bird_speed += gravity
@@ -238,14 +246,15 @@ def main():
 
                     # Draw everything
             # name:birdy:ready:id
-            for i in birds:
-                if i != "0":
-                    spl = i.split(":")
-                    if int(spl[-1]) != user_id:
-                        if int(spl[-2]) == 0:
-                            draw_bird(
-                                win, bird_x, float(spl[1]), bird_width, int(spl[-1])
-                            )
+            if ready > 0:
+                for i in birds:
+                    if i != "0":
+                        spl = i.split(":")
+                        if int(spl[-1]) != user_id:
+                            if int(spl[-2]) == 3:
+                                draw_bird(
+                                    win, bird_x, float(spl[1]), bird_width, int(spl[-1])
+                                )
 
             win.blit(bird_sprite, (bird_x, bird_y))
 
@@ -264,16 +273,20 @@ def main():
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 bird_speed = jump_force
-        elif game_state == WAITING:
+        elif game_state == WAITING and ready > 0:
             wait_screen(win, WIDTH, HEIGHT, font, frame_counter)
             send_pos()
             if ready == 3:
+                time.sleep(0.2)
+                print("Lets Go!!")
+
                 game_state = PLAYING
             frame_counter += 1  # Increment the frame counter for animation
             pygame.time.Clock().tick(30)
 
         clock.tick(fps)
-    save_game_state(score)
+
+    save_game_state(score, gameid, name)
     pygame.quit()
     sys.exit()
 

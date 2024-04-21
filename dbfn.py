@@ -9,8 +9,9 @@ def db_init():
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS SCORE(
-        game_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        score INTEGER DEFAULT 0
+        game_id INTEGER PRIMARY KEY,
+        name VARCHAR(30),
+        highscore INTEGER DEFAULT 0
         )
     """
     )
@@ -18,45 +19,77 @@ def db_init():
     connection.close()
 
 
+def db_del():
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
+    cursor.execute("DROP TABLE IF EXISTS SCORE")
+    connection.commit()
+    connection.close()
+
+
 def db_print():
-    connection = sqlite3.connect("flappy_bird.db")
+    connection = sqlite3.connect(DB_FILE)
     cursor = connection.cursor()
-    print("Current score db in the format [game_id,score] : ", end=" ")
     cursor.execute("SELECT * FROM SCORE")
-    rows = cursor.fetchall()
-    print(rows)
-    connection.commit()
+    results = cursor.fetchall()
+    if not results:
+        print("No data found in the database.")
+    else:
+        print("Game ID\tPlayer Name\tHigh Score")
+        print("-------\t------------\t-----------")
+        for row in results:
+            game_id, name, highscore = row
+            print(f"{game_id}\t{name}\t\t{highscore}")
     connection.close()
 
 
-def save_game_state(score):
+def save_game_state(score, game_id):
     connection = sqlite3.connect(DB_FILE)
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO SCORE(score) VALUES (?)", (score,))
-    cursor.execute("SELECT MAX(score) FROM SCORE")
-    highscore = cursor.fetchone()[0]
-    connection.commit()
-    connection.close()
-
-
-save_game_state(10)
-
-
-def load_game_state(score):
-    connection = sqlite3.connect(DB_FILE)
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT MAX(score) FROM SCORE")
+    cursor.execute("SELECT highscore FROM SCORE WHERE game_id = ?", (game_id,))
     highscore = cursor.fetchone()
+    if highscore is None or score > highscore[0]:
+        # Update with new high score
+        cursor.execute(
+            "UPDATE SCORE SET highscore = ? WHERE game_id = ?", (score, game_id)
+        )
+    connection.commit()
+    connection.close()
 
+
+def db_save(game_id, name):
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO SCORE (game_id, name, highscore) VALUES (?, ?, ?)",
+        (game_id, name, 0),
+    )
+    connection.commit()
+    connection.close()
+
+
+def load_game_state(game_id):
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
     try:
-        if highscore is None or highscore[0] is None:
-            score = 0
-        else:
-            score = highscore[0]
-        return score
+        cursor.execute(
+            """
+        SELECT name,highscore
+        FROM SCORE
+        WHERE game_id = ?
+    """,
+            (game_id,),
+        )
+        result = cursor.fetchone()
+        if result is None:
+            return None, 0
+
+        name, highscore = result
+
+        return name, highscore
+
     except sqlite3.Error as e:
         print("Error occurred while loading game state:", e)
-        return 0
+        raise
     finally:
         connection.close()
