@@ -26,7 +26,8 @@ def wait_screen(win, width, height, font, framecounter):
     win.blit(waiting_text, (width // 2 - waiting_text.get_width() // 2, height // 3))
     pygame.display.update()
 
-#TODO:name text box , 4 buttons
+
+# TODO:name text box , 4 buttons
 def start_screen(win, width, height, font, frame_counter, score, ready):
     win.fill((202, 228, 241))
     title_text = font.render("Flappy Bird", True, (0, 0, 0))
@@ -49,7 +50,7 @@ def start_screen(win, width, height, font, frame_counter, score, ready):
             frame_counter // ANIMATION_SPEED % len(ready_button_images)
         ]
         ready_button_rect = ready_button_image.get_rect(
-            center=(width // 2, height // 2 + BUTTON_HEIGHT * 3)
+            center=(width // 2, height // 2 + BUTTON_HEIGHT * 4)
         )
         win.blit(ready_button_image, ready_button_rect.topleft)
 

@@ -102,6 +102,7 @@ def exitserver():
         s.connect((SERVER, PORT))
         send_text = "Byebye" ":" + str(user_id)
         s.sendall(send_text.encode("utf-8"))
+
         s.close()
     except socket.error as msg:
         print("Mesag:", msg)
@@ -109,7 +110,7 @@ def exitserver():
 
 
 def send_pos():
-    # time.sleep(fpst)
+    time.sleep(fpst)
     global name, user_id, ready, bird_y, birds
     s = socket.socket()
     try:
@@ -138,27 +139,6 @@ def send_pos():
 
 send_pos()
 
-
-def recieve_ready():
-    global ready
-    s = socket.socket()
-    s.settimeout(0.1)
-    try:
-        s.connect((SERVER, PORT))
-        yanit = s.recv(1024).decode("utf-8")
-        if yanit == "START":
-            ready = 3
-        ready = 1
-        s.close()
-
-    except socket.error as msg:
-        if "[WinError 10061]" not in str(msg):
-            exitserver()
-        else:
-            print("Waiting for connection for server..")
-        s.close()
-
-
 def main():
     global bird_y, bird_speed, score, game_state, ready, birds, run
     # Start threads for sending data and receiving instructions
@@ -174,7 +154,7 @@ def main():
     )
     ready_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2,
-        HEIGHT // 2 + 3 * BUTTON_HEIGHT,
+        HEIGHT // 2 + 4 * BUTTON_HEIGHT,
         BUTTON_WIDTH,
         BUTTON_HEIGHT,
     )
@@ -286,7 +266,7 @@ def main():
                 bird_speed = jump_force
         elif game_state == WAITING:
             wait_screen(win, WIDTH, HEIGHT, font, frame_counter)
-            recieve_ready()
+            send_pos()
             if ready == 3:
                 game_state = PLAYING
             frame_counter += 1  # Increment the frame counter for animation

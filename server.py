@@ -44,18 +44,17 @@ def re_message(cli_datas):
     return mesaj
 
 
-def handle_client(conn,addr):
+def handle_client(conn, addr):
     global clients_ready, birds, cli_data_next_count
 
     while True:
         try:
             userdata = conn.recv(1024).decode("utf-8")
             # name:birdy:ready:id
-
             spl = userdata.split(":")
-            print(spl)
             if spl[-2] == "1":
                 mesaj = "ready:" + "2"
+                print("here")
                 conn.send(mesaj.encode("utf-8"))
                 clients_ready += 1
             if spl[-1] == "0":
@@ -64,33 +63,32 @@ def handle_client(conn,addr):
                 birds.append(userdata)
                 cli_data_next_count += 1
                 conn.send(mesaj.encode("utf-8"))
-            if clients_ready == len(birds) - 1:
+                
+            if clients_ready == len(birds) - 1 and clients_ready > 0:
                 for client_conn in clients:
                     client_conn.send("START".encode())
-                clients_ready = 0
+                print(clients_ready)
             else:
                 birds[int(spl[-1])] = userdata
                 conn.send(re_message(birds).encode("utf-8"))
-            if spl[0]  == "Byebye":
+            if spl[0] == "Byebye":
                 birds.pop(int(spl[-1]))
                 cli_data_next_count -= 1
                 clients_ready -= 1
                 print(birds)
-                
             conn.close()
-            
-            
+
         except Exception as e:
+            print(e)
             if "[WinError 10038]" not in str(e):  # Check for WinError code
-               print("Line number 66", e)        
-               cli_data_next_count -= 1
-               clients_ready -= 1
-               print("Players Left - ", cli_data_next_count - 1)
-               conn.close()
+                cli_data_next_count -= 1
+                clients_ready -= 1
+                clients_ready = max(clients_ready, 0)
+                cli_data_next_count = max(cli_data_next_count, 1)
+                print("Players Left - ", cli_data_next_count - 1)
+                conn.close()
             if "[WinError 10038]" in str(e):
                 clients.remove(addr)
-      
-      
 
 
 def start_server():
@@ -101,12 +99,11 @@ def start_server():
             conn, addr = server.accept()
             print("Connection from:", addr)
             clients.append(addr)
-            handle_client(conn,addr)
-        
-            print(f"[ACTIVE CONNECTIONS] {len(clients)}")  
+            handle_client(conn, addr)
+            print(f"[ACTIVE CONNECTIONS] {len(clients)}")
         except:
             pass
-    
+
 
 # Start the server
 if __name__ == "__main__":
