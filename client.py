@@ -42,11 +42,13 @@ BUTTON_HEIGHT = 50
 # assets
 background_image = pygame.image.load("assets/b2g.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+font1='assets/gomarice.ttf'
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+NEON_GREEN=(21, 245, 186)
 
 # Bird properties
 bird_width = 40
@@ -67,7 +69,7 @@ pipe_speed = 5
 pipes = []
 
 
-font = pygame.font.SysFont(None, 50)
+font = pygame.font.Font(font1, 50)
 
 # Game states
 START_SCREEN = 0
@@ -201,9 +203,9 @@ def main():
 
             if high == 0:
                 h1 = None
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1, ready)
+                start_screen(win, WIDTH, HEIGHT, frame_counter, h1, ready)
             else:
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high, ready)
+                start_screen(win, WIDTH, HEIGHT, frame_counter, high, ready)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
@@ -269,15 +271,15 @@ def main():
             for pipe in pipes:
                 draw_pipe(win, pipe[0], pipe[1], pipe[1], pipe_gap, pipe_width, HEIGHT)
 
-            score_text = font.render(str(score), True, WHITE)
+            score_text = font.render(str(score), True, NEON_GREEN)
             win.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 50))
             pygame.display.update()
         elif game_state == GAME_OVER:
             win.blit(background_image, (0, 0))
             if score > high:
-                game_over_screen(win, WIDTH, HEIGHT, font, frame_counter, score)
+                game_over_screen(win, WIDTH, HEIGHT, frame_counter, score)
             else:
-                game_over_screen(win, WIDTH, HEIGHT, font, frame_counter, high)
+                game_over_screen(win, WIDTH, HEIGHT, frame_counter, high)
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:

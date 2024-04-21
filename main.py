@@ -25,6 +25,7 @@ BUTTON_HEIGHT = 50
 # assets
 background_image = pygame.image.load("assets/b2g.png") 
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+pipe_image='assets/pipe.png'
 
 # Colors
 WHITE = (255, 255, 255)
