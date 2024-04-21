@@ -1,3 +1,4 @@
+# main folder
 import pygame
 import sys
 import random
