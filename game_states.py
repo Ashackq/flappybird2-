@@ -17,12 +17,12 @@ home_background_image = [
     pygame.image.load("assets/homebg.png"),
     pygame.image.load("assets/homebg1.png"),
 ]
-end_image=pygame.image.load('assets/endbg.png')
+end_image = pygame.image.load("assets/endbg.png")
 
 
 BUTTON_WIDTH = 120
 BUTTON_HEIGHT = 40
-ANIMATION_SPEED = 5  # Adjust as needed for the desired animation speed
+ANIMATION_SPEED = 15  # Adjust as needed for the desired animation speed
 
 
 def wait_screen(win, width, height, font, framecounter):
@@ -34,7 +34,7 @@ def wait_screen(win, width, height, font, framecounter):
 
 
 def start_screen(win, width, height, frame_counter, score, ready):
-    font = pygame.font.Font('assets/Venite.ttf', 30)
+    font = pygame.font.Font("assets/Venite.ttf", 30)
     # Cycle through home background images
     home_background_image_index = (
         frame_counter // ANIMATION_SPEED % len(home_background_image)
@@ -86,18 +86,24 @@ def start_screen(win, width, height, frame_counter, score, ready):
 
 
 def game_over_screen(win, width, height, frame_counter, score):
-    font = pygame.font.Font('assets/Venite.ttf', 30)
-    font1 = pygame.font.Font('assets/Venite.ttf', 25)
+    font = pygame.font.Font("assets/Venite.ttf", 30)
+    font1 = pygame.font.Font("assets/Venite.ttf", 25)
     win.blit(end_image, (0, 0))
 
     game_over_text = font.render("Game Over", True, (0, 0, 0))
     replay_text = font1.render("Press ENTER to replay", True, (0, 0, 0))
     exit_text = font1.render("Press ESC to exit", True, (0, 0, 0))
     win.blit(
-        game_over_text, (width // 2 - game_over_text.get_width() // 2, height // 3-100)
+        game_over_text,
+        (width // 2 - game_over_text.get_width() // 2, height // 3 - 100),
     )
     score_text = font.render("High - Score: " + str(score), True, (0, 0, 0))
-    win.blit(score_text, (width // 2 - game_over_text.get_width() // 2-50, height // 3-50))
-    win.blit(replay_text, (width // 2 - replay_text.get_width() // 2, height // 2 + 150))
+    win.blit(
+        score_text,
+        (width // 2 - game_over_text.get_width() // 2 - 50, height // 3 - 50),
+    )
+    win.blit(
+        replay_text, (width // 2 - replay_text.get_width() // 2, height // 2 + 150)
+    )
     win.blit(exit_text, (width // 2 - exit_text.get_width() // 2, height // 2 + 200))
     pygame.display.update()

@@ -18,10 +18,10 @@ birds = []
 
 # db data
 db_init()
-gameid = 101
+gameid = 0
 name, high = load_game_state(gameid)
 if name == None:
-    name = "AKash"
+    name = "NN"
     db_save(gameid, name)
 print(name, high)
 
@@ -42,13 +42,13 @@ BUTTON_HEIGHT = 50
 # assets
 background_image = pygame.image.load("assets/b2g.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
-font1='assets/gomarice.ttf'
+font1 = "assets/gomarice.ttf"
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-NEON_GREEN=(21, 245, 186)
+NEON_GREEN = (21, 245, 186)
 
 # Bird properties
 bird_width = 40
@@ -189,14 +189,14 @@ def main():
                         game_state = WAITING
                     else:
                         game_state = PLAYING
-                if event.key == pygame.K_ESCAPE and game_state == GAME_OVER:
+                if event.key == pygame.K_ESCAPE:
                     run = False
                     exitserver()
                 if event.key == pygame.K_SPACE and game_state == PLAYING:
                     bird_speed = jump_force
                 if event.key == pygame.K_RETURN:
                     if game_state == START_SCREEN or game_state == GAME_OVER:
-                        game_state = PLAYING
+                        game_state = START_SCREEN
                         reset_game()
 
         if game_state == START_SCREEN:
@@ -221,6 +221,10 @@ def main():
                     reset_game()
                     if ready > 0:
                         exitserver()
+            elif NN_button_rect.collidepoint(mouse_x, mouse_y):
+                if pygame.mouse.get_pressed()[0]:  # Check left mouse button
+                    game_state = PLAYING
+                    reset_game()
             elif ready_button_rect.collidepoint(mouse_x, mouse_y):
                 if pygame.mouse.get_pressed()[0]:  # Check left mouse button
                     ready = 1

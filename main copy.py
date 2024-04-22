@@ -45,7 +45,7 @@ bird_y = HEIGHT // 2 - bird_height // 2
 bird_speed = 5
 gravity = 0.5
 jump_force = -9
-bird_sprite = pygame.image.load("assets/sprite.png")
+bird_sprite = pygame.image.load("assets/fly1.png")
 bird_sprite = pygame.transform.scale(bird_sprite, (bird_width, bird_height))
 
 # Pipe properties
@@ -148,11 +148,26 @@ def main():
     clock = pygame.time.Clock()
     run = True
     start_button_rect = pygame.Rect(
-        WIDTH // 2 - BUTTON_WIDTH // 2, HEIGHT // 2, BUTTON_WIDTH, BUTTON_HEIGHT
+        WIDTH // 2 - BUTTON_WIDTH // 2 - 100,
+        HEIGHT // 2 + 210,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+    )
+    NN_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2 - 100,
+        HEIGHT // 2 + BUTTON_HEIGHT * 3 + 140,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
+    )
+    ready_button_rect = pygame.Rect(
+        WIDTH // 2 - BUTTON_WIDTH // 2 + 100,
+        HEIGHT // 2 + BUTTON_HEIGHT * 2 + 130,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT,
     )
     exit_button_rect = pygame.Rect(
         WIDTH // 2 - BUTTON_WIDTH // 2,
-        HEIGHT // 2 + 2 * BUTTON_HEIGHT,
+        HEIGHT // 2 + 3 * BUTTON_HEIGHT,
         BUTTON_WIDTH,
         BUTTON_HEIGHT,
     )
@@ -177,9 +192,9 @@ def main():
         if game_state == START_SCREEN:
             if high == 0:
                 h1 = None
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, h1, 1)
+                start_screen(win, WIDTH, HEIGHT, frame_counter, h1, 1)
             else:
-                start_screen(win, WIDTH, HEIGHT, font, frame_counter, high, 1)
+                start_screen(win, WIDTH, HEIGHT, frame_counter, high, 1)
             # Handle mouse clicks on buttons
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_x, mouse_y):
@@ -230,7 +245,7 @@ def main():
             jump_probability = bird_brain.predict(bird_state)
 
             # Decide to jump based on a threshold (e.g., 60% chance)
-            if jump_probability > 0.5:
+            if jump_probability > 0.8:
                 bird_speed = jump_force
             # Draw everything
             win.blit(bird_sprite, (bird_x, bird_y))

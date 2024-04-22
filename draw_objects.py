@@ -29,13 +29,16 @@ colors = [
 ]
 random_color = random.choice(colors)
 
+bird_sprite = pygame.image.load("assets/sprite.png")
+
 
 def draw_bird(win, x, y, width, id):
     # pygame.draw.rect(win, RED, (x, y, width, height))
-    pygame.draw.circle(win, random_color, [x, y], width / 2, 0)
+    # pygame.draw.circle(win, random_color, [x, y], width / 2, 0)
+    win.blit(bird_sprite, (x, y))
 
 
-# TODO
+# TODO:
 def draw_pipe(win, x, y, height, gap, pipe_width, win_height):
     pygame.draw.rect(win, BLACK, (x, 0, pipe_width, height))
     pygame.draw.rect(

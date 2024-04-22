@@ -1,4 +1,5 @@
 import sqlite3
+import matplotlib.pyplot as plt
 
 DB_FILE = "flappy_bird.db"
 
@@ -93,3 +94,32 @@ def load_game_state(game_id):
         raise
     finally:
         connection.close()
+
+
+def get_highscores():
+    connection = sqlite3.connect(DB_FILE)
+    cursor = connection.cursor()
+    cursor.execute("SELECT name, highscore FROM SCORE")
+    results = cursor.fetchall()
+    connection.close()
+
+    names = [row[0] for row in results]
+    highscores = [row[1] for row in results]
+    return names, highscores
+
+
+def plot_highscores():
+    names, highscores = get_highscores()
+
+    # Create the bar chart
+    plt.figure(figsize=(10, 6))  # Adjust figure size as desired
+    plt.bar(names, highscores, color="skyblue")
+    plt.xlabel("Player Name")
+    plt.ylabel("Highscore")
+    plt.title("Flappy Bird Highscores")
+    plt.xticks(rotation=45, ha="right")  # Rotate player names for better readability
+
+    # Display the plot
+    plt.tight_layout()
+    plt.show()
+
