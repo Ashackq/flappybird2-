@@ -18,10 +18,10 @@ birds = []
 
 # db data
 db_init()
-gameid = 0
+gameid = 10
 name, high = load_game_state(gameid)
 if name == None:
-    name = "NN"
+    name = input("Enter Your Name: ")
     db_save(gameid, name)
 print(name, high)
 

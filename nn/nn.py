@@ -1,6 +1,6 @@
 import pygame
 import random
-import numpy as np
+import numpy1 as np
 import tensorflow as tf
 
 # ... other game code (imports, variables, etc.)

@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-import numpy as np
+import numpy1 as np
 import pickle
 import os
 from draw_objects import draw_pipe
